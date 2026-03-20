@@ -1,0 +1,26 @@
+name = "crypto-payment-worker"
+main = "src/index.js"
+compatibility_date = "2024-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+routes = [
+  { pattern = "x402.matija.eu", custom_domain = true }
+]
+
+[observability]
+enabled = true
+
+[env.production]
+name = "crypto-payment-worker"
+routes = [
+  { pattern = "x402.matija.eu", custom_domain = true }
+]
+
+[env.production.observability]
+enabled = true
+
+[env.dev]
+name = "crypto-payment-worker-dev"
+
+[env.dev.observability]
+enabled = true

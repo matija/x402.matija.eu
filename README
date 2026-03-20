@@ -1,0 +1,84 @@
+x402.matija.eu
+==============
+
+Pay-per-request API on Cloudflare Workers using the x402 protocol.
+Protected endpoints cost 1 USDC on Polygon. No API keys, no accounts
+— just a wallet signature.
+
+Live at https://x402.matija.eu
+
+
+How it works
+------------
+
+  1. Client requests a protected endpoint.
+  2. Server responds 402 with a PAYMENT-REQUIRED header.
+  3. Client signs a gasless USDC transfer (EIP-3009) with their wallet.
+  4. Client resends the request with a PAYMENT-SIGNATURE header.
+  5. A facilitator verifies the signature and settles on-chain.
+  6. Server returns the protected resource.
+
+Browsers get an interactive paywall page. Programmatic clients use
+the x402 SDK or handle the headers directly.
+
+
+Endpoints
+---------
+
+  GET /               Man-page overview (this info, but prettier).
+  GET /payment-info   Machine-readable JSON: network, token, price.
+  GET /api/data       Protected. Returns example JSON. 1 USDC.
+  GET /api/status     Protected. Returns server status. 1 USDC.
+
+
+Stack
+-----
+
+  Runtime         Cloudflare Workers
+  Framework       Hono
+  Protocol        x402 v2
+  Network         Polygon mainnet (eip155:137)
+  Token           USDC (0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359)
+  Facilitator     https://facilitator.payai.network
+  Paywall         Custom man-page styled HTML with wallet integration
+
+
+Files
+-----
+
+  src/index.js      Hono app, routes, x402 middleware.
+  src/paywall.js    Custom PaywallProvider — man-page styled 402 page
+                    with EIP-3009 signing via window.ethereum.
+  wrangler.toml     Cloudflare Workers config.
+  package.json      Dependencies.
+
+
+Development
+-----------
+
+  npm install
+  npm run dev         # local dev server via wrangler
+
+No secrets needed. The x402 facilitator handles on-chain settlement.
+
+
+Deployment
+----------
+
+  npm run deploy      # deploys to Cloudflare Workers
+
+
+Dependencies
+------------
+
+  @x402/core          x402 protocol core
+  @x402/evm           EVM payment scheme (EIP-3009, Permit2)
+  @x402/hono          Hono middleware adapter
+  hono                Web framework
+
+
+Links
+-----
+
+  x402 protocol       https://docs.x402.org
+  Source              https://github.com/matija/x402.matija.eu
