@@ -1,0 +1,182 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "x402.matija.eu",
+    "description": "Pay-per-request API using the x402 protocol. Protected endpoints require a 1 USDC micropayment on Polygon mainnet via EIP-712 TransferWithAuthorization.",
+    "version": "2.0.0"
+  },
+  "servers": [
+    { "url": "https://x402.matija.eu" }
+  ],
+  "components": {
+    "headers": {
+      "PaymentRequired": {
+        "description": "Base64-encoded JSON describing the payment requirements (x402 v2 `PaymentRequired` object). Present on 402 responses.",
+        "schema": { "type": "string", "format": "byte" }
+      },
+      "PaymentSignature": {
+        "description": "Base64-encoded JSON `PaymentPayload` (x402 v2). Send this header to authenticate a payment.",
+        "schema": { "type": "string", "format": "byte" }
+      }
+    },
+    "schemas": {
+      "PaymentInfo": {
+        "type": "object",
+        "properties": {
+          "protocol":           { "type": "string", "example": "x402" },
+          "version":            { "type": "integer", "example": 2 },
+          "network":            { "type": "string", "example": "eip155:137" },
+          "payment_address":    { "type": "string", "example": "0x91FdcfCAdfA7E660c70D9641257542deD2a2d384" },
+          "token":              { "type": "string", "example": "USDC" },
+          "token_contract":     { "type": "string", "example": "0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359" },
+          "price":              { "type": "string", "example": "1.0 USDC" },
+          "facilitator":        { "type": "string", "format": "uri", "example": "https://facilitator.payai.network" },
+          "protected_endpoints":{ "type": "array", "items": { "type": "string" }, "example": ["/api/data", "/api/status"] }
+        },
+        "required": ["protocol", "version", "network", "payment_address", "token", "token_contract", "price", "facilitator", "protected_endpoints"]
+      },
+      "ApiData": {
+        "type": "object",
+        "properties": {
+          "message": { "type": "string", "example": "This is protected data" },
+          "data": {
+            "type": "object",
+            "properties": {
+              "example":   { "type": "string", "example": "You have successfully paid with x402 on Polygon!" },
+              "timestamp": { "type": "string", "format": "date-time" }
+            },
+            "required": ["example", "timestamp"]
+          }
+        },
+        "required": ["message", "data"]
+      },
+      "ApiStatus": {
+        "type": "object",
+        "properties": {
+          "authenticated": { "type": "boolean", "example": true },
+          "server_time":   { "type": "string", "format": "date-time" }
+        },
+        "required": ["authenticated", "server_time"]
+      },
+      "PaymentError": {
+        "type": "object",
+        "description": "Machine-readable 402 body returned to non-browser clients.",
+        "properties": {
+          "error": { "type": "string" }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/": {
+      "get": {
+        "summary": "Homepage",
+        "description": "Returns an HTML man-page style index listing all endpoints, the payment flow, and configuration.",
+        "operationId": "getHome",
+        "responses": {
+          "200": {
+            "description": "HTML documentation page.",
+            "content": { "text/html": { "schema": { "type": "string" } } }
+          }
+        }
+      }
+    },
+    "/payment-info": {
+      "get": {
+        "summary": "Payment configuration",
+        "description": "Returns machine-readable JSON with the x402 payment configuration: network, token contract, price, payment address, facilitator URL, and the list of protected endpoints.",
+        "operationId": "getPaymentInfo",
+        "responses": {
+          "200": {
+            "description": "Payment configuration.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/PaymentInfo" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/data": {
+      "get": {
+        "summary": "Protected data",
+        "description": "Returns example JSON data. Costs 1 USDC on Polygon mainnet (eip155:137). Requests without a valid `PAYMENT-SIGNATURE` header receive HTTP 402 with a `PAYMENT-REQUIRED` header containing base64-encoded payment requirements.",
+        "operationId": "getApiData",
+        "parameters": [
+          {
+            "name": "PAYMENT-SIGNATURE",
+            "in": "header",
+            "required": false,
+            "description": "Base64-encoded x402 v2 `PaymentPayload` JSON. Required to access the resource; omit to receive payment instructions.",
+            "schema": { "type": "string", "format": "byte" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Payment accepted; protected data returned.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiData" }
+              }
+            }
+          },
+          "402": {
+            "description": "Payment required. Browser clients receive an interactive paywall HTML page; programmatic clients receive JSON with a `PAYMENT-REQUIRED` response header containing base64-encoded payment requirements.",
+            "headers": {
+              "PAYMENT-REQUIRED": { "$ref": "#/components/headers/PaymentRequired" }
+            },
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/PaymentError" }
+              },
+              "text/html": {
+                "schema": { "type": "string" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/status": {
+      "get": {
+        "summary": "Protected server status",
+        "description": "Returns server status including current server time. Costs 1 USDC on Polygon mainnet (eip155:137). Same payment flow as `/api/data`.",
+        "operationId": "getApiStatus",
+        "parameters": [
+          {
+            "name": "PAYMENT-SIGNATURE",
+            "in": "header",
+            "required": false,
+            "description": "Base64-encoded x402 v2 `PaymentPayload` JSON. Required to access the resource; omit to receive payment instructions.",
+            "schema": { "type": "string", "format": "byte" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Payment accepted; server status returned.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiStatus" }
+              }
+            }
+          },
+          "402": {
+            "description": "Payment required. Browser clients receive an interactive paywall HTML page; programmatic clients receive JSON with a `PAYMENT-REQUIRED` response header containing base64-encoded payment requirements.",
+            "headers": {
+              "PAYMENT-REQUIRED": { "$ref": "#/components/headers/PaymentRequired" }
+            },
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/PaymentError" }
+              },
+              "text/html": {
+                "schema": { "type": "string" }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

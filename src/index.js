@@ -3,6 +3,7 @@ import { x402HTTPResourceServer, x402ResourceServer, HonoAdapter } from '@x402/h
 import { ExactEvmScheme } from '@x402/evm/exact/server';
 import { HTTPFacilitatorClient } from '@x402/core/server';
 import { manPagePaywall } from './paywall.js';
+import openApiSpec from '../openapi.json';
 
 const app = new Hono();
 
@@ -208,6 +209,10 @@ app.get('/', (c) => {
 <h2>SEE ALSO</h2>
     x402 protocol   <a href="https://docs.x402.org">https://docs.x402.org</a>
 </pre>`);
+});
+
+app.get('/openapi.json', (c) => {
+  return c.json(openApiSpec);
 });
 
 app.get('/payment-info', (c) => {
