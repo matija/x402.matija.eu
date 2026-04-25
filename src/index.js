@@ -9,6 +9,147 @@ const app = new Hono();
 
 const PAYMENT_ADDRESS = '0x91FdcfCAdfA7E660c70D9641257542deD2a2d384';
 const POLYGON_NETWORK = 'eip155:137';
+const SITE_URL = 'https://x402.matija.eu';
+
+const ROBOTS_TXT = `User-agent: *
+Allow: /
+
+# AI crawlers
+User-agent: GPTBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: Claude-User
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+`;
+
+const LLMS_TXT = `# x402.matija.eu
+
+> x402 Playground is a pay-per-request API on Cloudflare Workers using the x402 protocol.
+
+## Core Pages
+
+- [Home](${SITE_URL}/): Man-page overview of endpoints, payment flow, and configuration.
+- [Payment Info](${SITE_URL}/payment-info): Machine-readable payment configuration.
+- [OpenAPI](${SITE_URL}/openapi.json): OpenAPI 3.1 description of the service.
+
+## Protected Endpoints
+
+- [GET /api/data](${SITE_URL}/api/data): Example protected JSON response. Costs 1 USDC on Polygon.
+- [GET /api/status](${SITE_URL}/api/status): Protected server status response. Costs 1 USDC on Polygon.
+
+## Payment Details
+
+- Protocol: x402 v2.
+- Network: Polygon mainnet (eip155:137).
+- Token: USDC.
+- Price: 1 USDC per protected request.
+- Facilitator: https://facilitator.payai.network.
+
+## Crawl Policy
+
+AI crawlers are welcome to index the public documentation endpoints. Protected API endpoints intentionally return HTTP 402 without payment.
+`;
+
+const LLMS_FULL_TXT = `# x402.matija.eu
+
+x402.matija.eu is a Cloudflare Worker that demonstrates pay-per-request APIs using HTTP 402 and the x402 protocol.
+
+## Site Summary
+
+The service exposes public documentation endpoints and protected JSON API endpoints. Protected endpoints cost 1 USDC on Polygon mainnet. Clients without payment receive HTTP 402 with payment instructions.
+
+## Public Endpoints
+
+### GET /
+
+URL: ${SITE_URL}/
+
+Returns a man-page styled HTML page describing the service, endpoints, payment flow, and configuration.
+
+### GET /payment-info
+
+URL: ${SITE_URL}/payment-info
+
+Returns machine-readable JSON with:
+
+- protocol: x402
+- version: 2
+- network: eip155:137
+- payment_address: ${PAYMENT_ADDRESS}
+- token: USDC
+- token_contract: 0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359
+- price: 1.0 USDC
+- facilitator: https://facilitator.payai.network
+- protected_endpoints: /api/data and /api/status
+
+### GET /openapi.json
+
+URL: ${SITE_URL}/openapi.json
+
+Returns the OpenAPI 3.1 specification for the service.
+
+## Protected Endpoints
+
+### GET /api/data
+
+URL: ${SITE_URL}/api/data
+
+Returns example JSON after payment:
+
+- message: "This is protected data"
+- data.example: successful x402 payment message
+- data.timestamp: current server timestamp
+
+Without a valid payment, it returns HTTP 402 with a PAYMENT-REQUIRED header.
+
+### GET /api/status
+
+URL: ${SITE_URL}/api/status
+
+Returns authenticated server status after payment:
+
+- authenticated: true
+- server_time: current server timestamp
+
+Without a valid payment, it returns HTTP 402 with a PAYMENT-REQUIRED header.
+
+## Payment Flow
+
+1. Client requests a protected endpoint.
+2. Server responds with HTTP 402 and a PAYMENT-REQUIRED header.
+3. Client signs a gasless USDC transfer authorization.
+4. Client retries the request with a PAYMENT-SIGNATURE header.
+5. The facilitator verifies and settles the payment on-chain.
+6. Server returns the protected resource.
+
+Browser clients receive an interactive paywall page. Programmatic clients can use the x402 SDK or handle the headers directly.
+
+## Implementation
+
+- Runtime: Cloudflare Workers.
+- Framework: Hono.
+- Protocol: x402 v2.
+- Network: Polygon mainnet (eip155:137).
+- Payment scheme: exact EVM.
+- Token: USDC.
+- Facilitator: https://facilitator.payai.network.
+
+## Crawl Policy
+
+Public documentation endpoints are intended to be crawlable. AI crawlers are allowed in robots.txt. Protected API endpoints are discoverable, but access requires payment and may return HTTP 402 to crawlers.
+`;
 
 // Polygon USDC (PoS) — 1 USDC = 1_000_000 atomic units (6 decimals)
 const POLYGON_USDC = {
@@ -213,6 +354,18 @@ app.get('/', (c) => {
 
 app.get('/openapi.json', (c) => {
   return c.json(openApiSpec);
+});
+
+app.get('/robots.txt', (c) => {
+  return c.text(ROBOTS_TXT);
+});
+
+app.get('/llms.txt', (c) => {
+  return c.text(LLMS_TXT);
+});
+
+app.get('/llms-full.txt', (c) => {
+  return c.text(LLMS_FULL_TXT);
 });
 
 app.get('/payment-info', (c) => {

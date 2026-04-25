@@ -1,0 +1,26 @@
+# x402.matija.eu
+
+> x402 Playground is a pay-per-request API on Cloudflare Workers using the x402 protocol.
+
+## Core Pages
+
+- [Home](https://x402.matija.eu/): Man-page overview of endpoints, payment flow, and configuration.
+- [Payment Info](https://x402.matija.eu/payment-info): Machine-readable payment configuration.
+- [OpenAPI](https://x402.matija.eu/openapi.json): OpenAPI 3.1 description of the service.
+
+## Protected Endpoints
+
+- [GET /api/data](https://x402.matija.eu/api/data): Example protected JSON response. Costs 1 USDC on Polygon.
+- [GET /api/status](https://x402.matija.eu/api/status): Protected server status response. Costs 1 USDC on Polygon.
+
+## Payment Details
+
+- Protocol: x402 v2.
+- Network: Polygon mainnet (eip155:137).
+- Token: USDC.
+- Price: 1 USDC per protected request.
+- Facilitator: https://facilitator.payai.network.
+
+## Crawl Policy
+
+AI crawlers are welcome to index the public documentation endpoints. Protected API endpoints intentionally return HTTP 402 without payment.
